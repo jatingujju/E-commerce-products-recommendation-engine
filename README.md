@@ -153,17 +153,9 @@ GET /product?product_name=iPhone%2015
 
 ---
 
-## 📸 Screenshots
-
-### FastAPI Swagger UI
-
 ![Swagger API](screenshots/swagger_api.png)
 
-### Recommendation API Response
-
 ![API Response](screenshots/api_response.png)
-
-### Product Similarity Graph
 
 ![Product Similarity Graph](screenshots/product_similarity_graph.png)
 
