@@ -70,21 +70,78 @@ def get_products():
 # ======================================
 # RECOMMENDATION ENDPOINT
 # ======================================
-
 @app.get("/recommend")
 def recommend(
     product_name: str,
-    k: int = 5
+    k: int = 5,
+    explore: float = 0.10
 ):
 
     recommendations = rank_products(
         product_name,
-        k
+        k * 3
     )
 
+    if not recommendations:
+
+        return {
+            "product": product_name,
+            "recommendations": []
+        }
+
+    # Diversity Filter
+    final = []
+    seen_categories = {}
+
+    for item in recommendations:
+
+        category = item.get(
+            "category",
+            "unknown"
+        )
+
+        if seen_categories.get(category, 0) < 2:
+
+            final.append(item)
+
+            seen_categories[category] = (
+                seen_categories.get(category, 0)
+                + 1
+            )
+
+        if len(final) >= k:
+            break
+
+    # ε-Greedy Exploration
+    import random
+
+    if random.random() < explore:
+
+        sample = items.sample(1)
+
+        final.append({
+
+            "product":
+                sample.iloc[0]["name"],
+
+            "score":
+                0.0,
+
+            "reason":
+                "exploration"
+        })
+
     return {
+
         "product": product_name,
-        "recommendations": recommendations
+
+        "strategy": {
+
+            "diversity": True,
+            "exploration": explore
+        },
+
+        "recommendations": final[:k]
     }
 
 # ======================================

@@ -1,69 +1,107 @@
-import lightgbm as lgb
 import pandas as pd
+import lightgbm as lgb
+from sklearn.model_selection import train_test_split
 
-# Load training data
-X = pd.read_parquet(
-    "rank_train.parquet"
-)
+# ==========================================
+# LOAD TRAINING DATA
+# ==========================================
+
+df = pd.read_parquet("rank_train.parquet")
+
+print("\nTraining Data Shape:")
+print(df.shape)
+
+# ==========================================
+# FEATURES
+# ==========================================
 
 feature_cols = [
 
-    "user_score",
-    "user_views",
-    "user_carts",
-    "user_purchases",
+    "total_views",
+    "total_carts",
+    "total_purchases",
+    "implicit_score",
 
-    "item_popularity",
-    "item_views",
-    "item_purchases"
+    "views",
+    "carts",
+    "purchases",
+    "popularity_score"
 ]
 
-# Query groups
-X = X.sort_values("user_id")
+X = df[feature_cols]
+
+y = df["label"]
+
+# ==========================================
+# SORT BY USER
+# ==========================================
+
+df = df.sort_values("user_id")
+
+X = df[feature_cols]
+y = df["label"]
+
+# ==========================================
+# GROUPS FOR RANKING
+# ==========================================
 
 group = (
-    X.groupby("user_id")
-    .size()
-    .values
+    df.groupby("user_id")
+      .size()
+      .tolist()
 )
 
-dtrain = lgb.Dataset(
-    X[feature_cols],
-    label=X["label"],
+# ==========================================
+# LIGHTGBM DATASET
+# ==========================================
+
+train_data = lgb.Dataset(
+    X,
+    label=y,
     group=group
 )
 
+# ==========================================
+# PARAMETERS
+# ==========================================
+
 params = {
 
-    "objective":
-        "lambdarank",
+    "objective": "lambdarank",
 
-    "metric":
-        "ndcg",
+    "metric": "ndcg",
 
-    "learning_rate":
-        0.05,
+    "ndcg_eval_at": [5, 10],
 
-    "num_leaves":
-        31,
+    "learning_rate": 0.05,
 
-    "min_data_in_leaf":
-        5,
+    "num_leaves": 31,
 
-    "verbosity":
-        -1
+    "min_data_in_leaf": 5,
+
+    "verbosity": -1
 }
 
+# ==========================================
+# TRAIN
+# ==========================================
+
 model = lgb.train(
+
     params,
-    dtrain,
+
+    train_data,
+
     num_boost_round=100
 )
+
+# ==========================================
+# SAVE MODEL
+# ==========================================
 
 model.save_model(
     "lgb_ranker.txt"
 )
 
-print(
-    "\nModel saved: lgb_ranker.txt"
-)
+print("\nModel Saved Successfully")
+print("File: lgb_ranker.txt")
